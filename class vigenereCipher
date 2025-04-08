@@ -1,0 +1,15 @@
+public class VigenereCipher {
+    private final BigVigenere cipherEngine;
+
+    public VigenereCipher(String key) {
+        this.cipherEngine = new BigVigenere(key);
+    }
+
+    public String encrypt(String message) {
+        return cipherEngine.encrypt(message);
+    }
+
+    public String decrypt(String encryptedMessage) {
+        return cipherEngine.decrypt(encryptedMessage);
+    }
+}
