@@ -1,0 +1,171 @@
+import java.util.Scanner;
+
+class BigVigenere {
+    private int[] key;
+    private char[][] alphabet;
+    private Scanner sc = new Scanner(System.in);    //un scanner para toda la clase
+
+    public BigVigenere() {//constructor de la clase
+        System.out.println("ingresa la clave:");
+        String clave = sc.nextLine();
+        set_key(clave);//funcion que convierte key string a key int
+        Alfabeto();//funcion que crea la matriz y la rellena
+    }
+
+    public BigVigenere(String numericKey) {
+        set_key(numericKey);
+        Alfabeto();
+    }
+
+    public void Alfabeto() {//funcion para crear y rellanar la matriz
+        int pos = 0;
+        String alphabeto = "abcdefghijklmnñopqrstuvwxyzABCDEFGHIJKLMNÑOPQRSTUVWXYZ0123456789";
+        int tamano = alphabeto.length();//64
+        alphabet = new char[tamano][tamano];
+
+        for (int i = 0; i < tamano; i++) {
+            for (int j = 0; j < tamano; j++) {
+                pos = (i + j) % tamano; //esto es lo que hace que se vaya corriendo
+                alphabet[i][j] = alphabeto.charAt(pos);//rellena la matriz
+            }
+        }
+    }
+
+    public void set_key(String numericKey) {//funcion para pasar la key de String a int
+        char[] charArray = numericKey.toCharArray();//se paso la key a un arreglo;
+        key = new int[charArray.length];//se le indico a la key que tiene que ser un arreglo se ese tamaño
+
+        for (int i = 0; i < charArray.length; i++) {
+            if (!Character.isDigit(charArray[i])) {//solo confirma que sea una clave de numeros y no de letras
+                System.out.println("clave invalida");
+                return;
+            }
+            key[i] = Character.getNumericValue(charArray[i]);//aqui se le pasan los datos a la key
+        }
+    }
+
+    public char search(int posicion) {//metodo para buscar la posicion
+
+        int filas = alphabet.length;//64
+        int columnas = alphabet[0].length;//64
+
+        int fila = posicion / columnas;
+        int columna = posicion % columnas;
+
+        return alphabet[fila][columna];
+    }
+
+    public char optimalSearch(int posicion) {
+        if (posicion < 0 || posicion >= 4096) {
+            return '\0';
+        }
+        return alphabet[posicion / 64][posicion % 64];
+    }
+
+    public boolean charEnAlfabeto(char m) {//funcion que sirve para que en el texto hayan saltos como "hola como estas"
+        String arreglo_alfabe = "abcdefghijklmnñopqrstuvwxyzABCDEFGHIJKLMNÑOPQRSTUVWXYZ0123456789";
+        return arreglo_alfabe.indexOf(m) != -1;//indexOf busca el caracter m dentro de la cadena y lo compara
+    }
+
+    public String encrypt(String message) {
+        long startTime = System.nanoTime();
+        StringBuilder mensajeEncriptado = new StringBuilder();//este es un String pero inteligente
+
+        for (int i = 0; i < message.length(); i++) {
+            char caracterMensaje = message.charAt(i);//se toma el caracter del mensaje
+            if (!charEnAlfabeto(caracterMensaje)) {//aqui se pregunta si el caracter esta vacio " ", se salta y deja un espacio
+                mensajeEncriptado.append(caracterMensaje);
+                continue;
+            }
+            //mecanismo para encontrar la posicion de cada caracter
+            int posicionOriginal = -1;
+            for (int pos = 0; pos < 4096; pos++) {
+                if (optimalSearch(pos) == caracterMensaje) {
+                    posicionOriginal = pos;
+                    break;
+                }
+            }
+            int keyPosicion = key[i % key.length];//se toma la clave (depende de i)
+            int nuevaPosicion = ((posicionOriginal + keyPosicion) % 4096);
+
+            mensajeEncriptado.append(optimalSearch(nuevaPosicion));
+        }//append, agrega texto al final de la cadena es como a+b+s+c
+        long endTime = System.nanoTime(); // Finaliza el contador
+        System.out.println("Tiempo de encriptación: " + (endTime - startTime) / 1_000_000.0 + " ms");
+        return mensajeEncriptado.toString();
+    }
+
+    public String decrypt(String encryptedMessage) {
+        long startTime = System.nanoTime();
+        StringBuilder mensajeDesencriptado = new StringBuilder();
+
+        for (int i = 0; i < encryptedMessage.length(); i++) {
+            char caracteMensaje = encryptedMessage.charAt(i);
+            if (!charEnAlfabeto(caracteMensaje)) {
+                mensajeDesencriptado.append(caracteMensaje);
+                continue;
+            }
+            int posicionEncriptada = -1;
+            for (int pos = 0; pos < 4096; pos++) {
+                if (search(pos) == caracteMensaje) {
+                    posicionEncriptada = pos;
+                    break;
+                }
+            }
+            int desplazamiento = key[i % key.length];
+            int posicionOriginal = (posicionEncriptada - desplazamiento + 4096) % 4096;
+
+            mensajeDesencriptado.append(search(posicionOriginal));
+        }
+        long endTime = System.nanoTime(); // Finaliza el contador
+        System.out.println("Tiempo de desencriptación: " + (endTime - startTime) / 1_000_000.0 + " ms");
+        return mensajeDesencriptado.toString();
+    }
+
+    public void reEncrypt() {//permite cambiar la clave y volver a increptarlo
+
+        System.out.println("ingresa el mensaje: ");
+        String mensaje = sc.nextLine();
+
+        key = new int[mensaje.length()];//la key va a ser un arreglo int, tamaño mensaje
+        System.out.println("ingresa la key: ");
+        String keyString = sc.nextLine();
+        set_key(keyString);//la key se convierte a int
+        System.out.println(encrypt(mensaje));
+    }
+    //funcion para medir el tiempo de encriptar
+
+    public static void main(String[] args) {
+        // Usando VigenereCipher en lugar de BigVigenere directamente
+        BigVigenere vigenere = new BigVigenere();
+        Scanner sc = new  Scanner(System.in);
+        while (true) {
+            System.out.println("1. Encriptar");
+            System.out.println("2. Desencriptar");
+            System.out.println("3. ReEncriptar");
+            System.out.println("4. Salir");
+            int opcion = sc.nextInt();
+            if(opcion==1){
+                sc.nextLine();
+                System.out.println("ingresa mensaje:");
+                String mensaje = sc.nextLine();
+                System.out.println(vigenere.encrypt(mensaje));
+            }
+            else if(opcion==2){
+                sc.nextLine();
+                System.out.println("ingresa mensaje encriptado:");
+                String mensaje = sc.nextLine();
+                System.out.println(vigenere.decrypt(mensaje));
+            }
+            else if(opcion==3){
+                vigenere.reEncrypt();
+            }
+            else if(opcion==4){
+                System.exit(0);
+            }
+            else{
+                System.out.println("Opcion invalida");
+            }
+        }
+    }
+    }
